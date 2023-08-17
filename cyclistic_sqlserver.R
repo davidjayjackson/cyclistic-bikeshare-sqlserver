@@ -39,7 +39,7 @@ df <- df %>% janitor::remove_empty(which = c("rows","cols"))
 dbWriteTable(con, "data1",df ,overwrite=TRUE)
 dbListFields(con,"data1")
 
-dbGetQuery(con,"select count(*) from rides")
+dbGetQuery(con,"select count(*) from data1")
 
 
 # Part 2 Apr - June
