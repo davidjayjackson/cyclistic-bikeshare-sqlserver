@@ -10,6 +10,7 @@ library(scales)
 library(tidyverse)
 library(janitor)
 library(writexl)
+library(arrow)
 
 ##
 
@@ -119,8 +120,9 @@ dbGetQuery(con,"select count(*) from data4")
 
 ## Read Data back from SQL Sever DB
 
-rides <-dbGetQuery(con,"select start_date,trip_duration,trip_distance from rides")
+rides <-dbGetQuery(con,"SELECT * FROM rides")
 rides$start_date <- as.Date(rides$start_date)
+rides$end_date <- as.Date(rides$end_date)
 summary(rides)
 
 ggplot(rides) + geom_boxplot(aes(x=trip_duration))
@@ -131,3 +133,9 @@ ggplot(rides) + geom_boxplot(aes(x=trip_distance))
 ggplot(rides) + geom_histogram(aes(x=trip_distance)) +
   scale_x_log10()
 
+## Ride to write_parquet
+library(arrow)
+# create a sample dataframe
+df <- data.frame(x = 1:10, y = rnorm(10))
+# write the dataframe to a parquet file
+write_parquet(rides, "rideclean.parquet")
