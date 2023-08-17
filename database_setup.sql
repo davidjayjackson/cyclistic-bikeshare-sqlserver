@@ -73,36 +73,45 @@ SET
 DELETE FROM rides
 WHERE trip_duration <= 0;
 
--- Calculate ride distance using: start_lat, start_lng, end_lat,end_lng
+
 -- 1. Add the new column trip_distance
-ALTER TABLE rides DROP COLUMN trip_distance;
 ALTER TABLE rides ADD trip_distance FLOAT;
 
 -- 2. Compute and update the trip_distance in miles
+-- In this corrected version, I've prefixed all ambiguous column references with the RideDistances 
+-- alias to clearly indicate from which source (the CTE) the columns should be used.
+
+
+
 WITH RideDistances AS (
     SELECT
-        rid.ride_id, -- Assuming there's a unique identifier for each ride. Adjust as necessary.
-        rid.start_lat,
-        rid.start_lng,
-        rid.end_lat,
-        rid.end_lng,
-        RADIANS(rid.end_lat - rid.start_lat) AS dLat,
-        RADIANS(rid.end_lng - rid.start_lng) AS dLng
-    FROM rides as rid
+        ride_id, 
+        start_lat,
+        start_lng,
+        end_lat,
+        end_lng,
+        RADIANS(end_lat - start_lat) AS dLat,
+        RADIANS(end_lng - start_lng) AS dLng
+    FROM rides
 )
 UPDATE rides
-SET trip_distance = 3959.0 * 2 * ATN2( 
+SET trip_distance = ROUND(
+    3959.0 * 2 * ATN2( 
         SQRT(
-            SQUARE(SIN(dLat/2)) + 
-            COS(RADIANS(rd.start_lat)) * COS(RADIANS(rd.end_lat)) * 
-            SQUARE(SIN(dLng/2))
+            SQUARE(SIN(RideDistances.dLat/2)) + 
+            COS(RADIANS(RideDistances.start_lat)) * COS(RADIANS(RideDistances.end_lat)) * 
+            SQUARE(SIN(RideDistances.dLng/2))
         ),
         SQRT(1 - (
-            SQUARE(SIN(dLat/2)) + 
-            COS(RADIANS(rd.start_lat)) * COS(RADIANS(rd.end_lat)) * 
-            SQUARE(SIN(dLng/2))
+            SQUARE(SIN(RideDistances.dLat/2)) + 
+            COS(RADIANS(RideDistances.start_lat)) * COS(RADIANS(RideDistances.end_lat)) * 
+            SQUARE(SIN(RideDistances.dLng/2))
         ))
-    )
-FROM RideDistances as rd
-WHERE rides.ride_id = rd.ride_id; -- Join on the unique identifier. Adjust as necessary.
+    ), 0) -- Rounded to 0 decimals
+FROM RideDistances
+WHERE rides.ride_id = RideDistances.ride_id;
 
+DELETE FROM rides
+WHERE trip_distance <= 0;
+
+SELECT min(trip_distance),max(trip_distance),avg(trip_distance) FROM rides;

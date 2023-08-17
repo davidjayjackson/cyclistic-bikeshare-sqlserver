@@ -116,3 +116,18 @@ dbWriteTable(con, "data4",df ,overwrite=TRUE)
 dbListFields(con,"data4")
 
 dbGetQuery(con,"select count(*) from data4")
+
+## Read Data back from SQL Sever DB
+
+rides <-dbGetQuery(con,"select start_date,trip_duration,trip_distance from rides")
+rides$start_date <- as.Date(rides$start_date)
+summary(rides)
+
+ggplot(rides) + geom_boxplot(aes(x=trip_duration))
+ggplot(rides) + geom_histogram(aes(x=trip_duration)) +
+  scale_x_log10()
+
+ggplot(rides) + geom_boxplot(aes(x=trip_distance))
+ggplot(rides) + geom_histogram(aes(x=trip_distance)) +
+  scale_x_log10()
+
