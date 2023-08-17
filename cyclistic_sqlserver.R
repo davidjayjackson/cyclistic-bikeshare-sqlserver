@@ -30,7 +30,7 @@ files <- list.files(path = dir_path, pattern = "*.csv", full.names = TRUE)
 # And drop a few uneeded columns
 all_data <- lapply(files, read_csv)
 df <- do.call(rbind, all_data)
-df <- df %>% select(-c('ride_id','start_station_id','end_station_id'))
+df <- df %>% select(-c('start_station_id','end_station_id'))
 
 df <- df %>% janitor::clean_names()
 df <- df %>% janitor::remove_empty(which = c("rows","cols"))
@@ -52,14 +52,13 @@ files <- list.files(path = dir_path, pattern = "*.csv", full.names = TRUE)
 
 all_data <- lapply(files, read_csv)
 df <- do.call(rbind, all_data)
-df <- df %>% select(-c('ride_id','start_station_id','end_station_id'))
+df <- df %>% select(-c('start_station_id','end_station_id'))
 
 df <- df %>% janitor::clean_names()
 df <- df %>% janitor::remove_empty(which = c("rows","cols"))
 
 
-# USA <- read.csv("../COVID-19-NYTimes-data//us.csv")
-# USA$date <- as.Date(USA$date)
+
 
 dbWriteTable(con, "data2",df ,overwrite=TRUE)
 dbListFields(con,"data2")
@@ -79,7 +78,7 @@ files <- list.files(path = dir_path, pattern = "*.csv", full.names = TRUE)
 # And drop a few uneeded columns
 all_data <- lapply(files, read_csv)
 df <- do.call(rbind, all_data)
-df <- df %>% select(-c('ride_id','start_station_id','end_station_id'))
+df <- df %>% select(-c('start_station_id','end_station_id'))
 
 df <- df %>% janitor::clean_names()
 df <- df %>% janitor::remove_empty(which = c("rows","cols"))
@@ -95,7 +94,6 @@ dbGetQuery(con,"select count(*) from data3")
 
 # Part 4 Oct - Dec.
 
-# Part 3 Aug - Sept.
 
 
 # Directory with CSV files
@@ -106,7 +104,7 @@ files <- list.files(path = dir_path, pattern = "*.csv", full.names = TRUE)
 # And drop a few uneeded columns
 all_data <- lapply(files, read_csv)
 df <- do.call(rbind, all_data)
-df <- df %>% select(-c('ride_id','start_station_id','end_station_id'))
+df <- df %>% select(-c('start_station_id','end_station_id'))
 
 df <- df %>% janitor::clean_names()
 df <- df %>% janitor::remove_empty(which = c("rows","cols"))
