@@ -136,6 +136,7 @@ ggplot(rides) + geom_histogram(aes(x=trip_distance)) +
 ## Ride to write_parquet
 library(arrow)
 # create a sample dataframe
-df <- data.frame(x = 1:10, y = rnorm(10))
+sixmonths <- rides %>% filter(end_date >='2021-10-01')
 # write the dataframe to a parquet file
 write_parquet(rides, "rideclean.parquet")
+write_parquet(sixmonths, "sixmonths.parquet")
