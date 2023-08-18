@@ -115,3 +115,133 @@ DELETE FROM rides
 WHERE trip_distance <= 0;
 
 SELECT min(trip_distance),max(trip_distance),avg(trip_distance) FROM rides;
+
+-- ChatGPT flag outliers: Write SQL Server sql to flag outliers 
+
+ALTER TABLE rides ADD IsOutlier INT DEFAULT 0;
+
+WITH Quartiles AS (
+    SELECT
+        PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY trip_distance) OVER () AS Q1,
+        PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY trip_distance) OVER () AS Q3
+    FROM rides
+)
+
+, IQR AS (
+    SELECT TOP 1
+        Q1,
+        Q3,
+        Q3 - Q1 AS IQR
+    FROM Quartiles
+)
+
+UPDATE r
+SET IsOutlier = CASE 
+                   WHEN trip_distance < (Q1 - 1.5*IQR) OR trip_distance > (Q3 + 1.5*IQR) THEN 1
+                   ELSE 0
+                END
+FROM rides r
+CROSS JOIN IQR;
+
+WITH OutlierCounts AS (
+    SELECT
+        SUM(CASE WHEN IsOutlier = 0 THEN 1 ELSE 0 END) AS ZeroCount,
+        SUM(CASE WHEN IsOutlier = 1 THEN 1 ELSE 0 END) AS OneCount,
+        COUNT(*) AS Total
+    FROM rides
+)
+
+SELECT
+    ZeroCount,
+    OneCount,
+    CAST(ZeroCount AS FLOAT) / Total * 100 AS ZeroPercentage,
+    CAST(OneCount AS FLOAT) / Total * 100 AS OnePercentage
+FROM OutlierCounts;
+
+--- Count /pecent rideable_types
+
+WITH MemberCasualCounts AS (
+    SELECT
+        SUM(CASE WHEN member_casual = 'member' THEN 1 ELSE 0 END) AS MemberCount,
+        SUM(CASE WHEN member_casual = 'casual' THEN 1 ELSE 0 END) AS CasualCount,
+        COUNT(*) AS Total
+    FROM rides
+	WHERE IsOutlier = 0
+)
+
+SELECT
+    MemberCount,
+    CasualCount,
+    round(CAST(MemberCount AS FLOAT) / Total * 100,2) AS MemberPercentage,
+    round(CAST(CasualCount AS FLOAT) / Total * 100,2) AS CasualPercentage
+FROM MemberCasualCounts;
+
+-- Count and percents for Bike Type 
+WITH RideableTypeCounts AS (
+    SELECT
+        SUM(CASE WHEN rideable_type = 'docked_bike' THEN 1 ELSE 0 END) AS DockedBikeCount,
+        SUM(CASE WHEN rideable_type = 'classic_bike' THEN 1 ELSE 0 END) AS ClassicBikeCount,
+        SUM(CASE WHEN rideable_type = 'electric_bike' THEN 1 ELSE 0 END) AS ElectricBikeCount,
+        COUNT(*) AS Total
+    FROM rides
+	WHERE IsOutlier = 0
+)
+
+SELECT
+    DockedBikeCount,
+    ClassicBikeCount,
+    ElectricBikeCount,
+    CAST(DockedBikeCount AS FLOAT) / Total * 100 AS DockedBikePercentage,
+    CAST(ClassicBikeCount AS FLOAT) / Total * 100 AS ClassicBikePercentage,
+    CAST(ElectricBikeCount AS FLOAT) / Total * 100 AS ElectricBikePercentage
+FROM RideableTypeCounts;
+
+-- Month with most and least rides
+
+-- Counting rides by month for rows where IsOutlier = 0
+-- Counting rides by month for rows where IsOutlier = 0
+WITH MonthlyRides AS (
+    SELECT
+        MONTH(start_date) AS MonthNumber,
+        DATENAME(MONTH, start_date) AS MonthName,
+        COUNT(*) AS RideCount
+    FROM rides
+    WHERE IsOutlier = 0
+    GROUP BY MONTH(start_date), DATENAME(MONTH, start_date)
+),
+
+RankedRides AS (
+    SELECT 
+        MonthName,
+        RideCount,
+        ROW_NUMBER() OVER (ORDER BY RideCount DESC) AS DescRank,
+        ROW_NUMBER() OVER (ORDER BY RideCount ASC) AS AscRank
+    FROM MonthlyRides
+)
+
+-- Getting months with most and least rides
+SELECT 
+    MonthName,
+    RideCount,
+    CASE 
+        WHEN DescRank = 1 THEN 'Most Rides'
+        WHEN AscRank = 1 THEN 'Least Rides'
+        ELSE 'Other'
+    END AS Description
+FROM RankedRides
+WHERE DescRank = 1 OR AscRank = 1
+ORDER BY RideCount DESC;
+
+SELECT min(trip_distance),max(trip_distance), avg(trip_distance) 
+FROM rides
+WHERE IsOutlier = 0;
+
+SELECT min(trip_duration),max(trip_duration), avg(trip_duration) 
+FROM rides
+WHERE IsOutlier = 0;
+
+SELECT member_casual,start_date,count(*) as row_count
+FROM rides
+WHERE IsOutlier = 0
+GROUP BY member_casual,start_date
+ORDER BY member_casual,start_date;

@@ -115,12 +115,11 @@ df <- df %>% janitor::remove_empty(which = c("rows","cols"))
 
 dbWriteTable(con, "data4",df ,overwrite=TRUE)
 dbListFields(con,"data4")
-
 dbGetQuery(con,"select count(*) from data4")
 
 ## Read Data back from SQL Sever DB
 
-rides <-dbGetQuery(con,"SELECT * FROM rides")
+rides <-dbGetQuery(con,"SELECT * FROM rides WHERE IsOutlier = 0")
 rides$start_date <- as.Date(rides$start_date)
 rides$end_date <- as.Date(rides$end_date)
 summary(rides)
@@ -131,7 +130,15 @@ ggplot(rides) + geom_histogram(aes(x=trip_duration)) +
 
 ggplot(rides) + geom_boxplot(aes(x=trip_distance))
 ggplot(rides) + geom_histogram(aes(x=trip_distance)) +
-  scale_x_log10()
+    scale_x_log10()
+
+rides |> filter(IsOutlier==0) |> 
+  count(member_casual,day_of_week)|> 
+  ggplot() + geom_col(aes(x=day_of_week,y=n)) + facet_wrap(~member_casual)
+
+rides |> filter(IsOutlier==0) |> group_by(member_casual,start_date) |>
+  summarise() |> ggplot() + g|> count(member_casual,start_date) |> ggplot() + 
+  geom_line(aes(x=start_date,y=n)) + facet_wrap(~member_casual)
 
 ## Ride to write_parquet
 library(arrow)
