@@ -140,10 +140,17 @@ rides |> filter(IsOutlier==0) |> group_by(member_casual,start_date) |>
   summarise() |> ggplot() + g|> count(member_casual,start_date) |> ggplot() + 
   geom_line(aes(x=start_date,y=n)) + facet_wrap(~member_casual)
 
+## Calc cumative
+
+rides$totaluration <- cumsum(rides$trip_duration) 
+ggplot(rides) + geom_line(aes(x=start_date,y=totaluration))
+
 ## Ride to write_parquet
 library(arrow)
 # create a sample dataframe
 sixmonths <- rides %>% filter(end_date >='2021-10-01')
-# write the dataframe to a parquet file
+threemonths <- rides %>% filter(end_date >='2022-01-01')
+# write the dataframe to parquet file
 write_parquet(rides, "rideclean.parquet")
 write_parquet(sixmonths, "sixmonths.parquet")
+write_parquet(threemonths, "threemonths.parquet")
